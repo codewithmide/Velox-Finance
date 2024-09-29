@@ -5,13 +5,12 @@ import { Input, Button } from "./molecules/FormComponents";
 import DropDownSelect from "./molecules/DropDownSelect";
 import Image from "next/image";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import Modal from "./molecules/Modal";
 import toast from "react-hot-toast";
 import { Rpc, createRpc } from "@lightprotocol/stateless.js";
 import assets from "../static/coins";
 import Loader from "./atom/Loader";
-import bs58 from "bs58";
 
 
 const SwapComponent = () => {
@@ -30,7 +29,7 @@ const SwapComponent = () => {
   const wallet = useWallet();
   const [connection, setConnection] = useState<Rpc | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
-  const [hasEnoughBalance, setHasEnoughBalance] = useState(true);
+  const [hasEnoughBalance, setHasEnoughBalance] = useState<boolean>(true);
 
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_MAINNET_API_BASE_URL;
