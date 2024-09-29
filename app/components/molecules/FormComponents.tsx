@@ -2,12 +2,12 @@
 
 import classnames from "@/app/utils/classnames";
 import Image from "next/image";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, ReactNode } from "react";
 
 type ButtonPropsType = {
   link: (e?: any) => void;
-  cta?: string;
-  children?: React.ReactNode;
+  cta?: string; // Optional CTA text
+  children?: ReactNode; // Use children for complex JSX
   loading?: boolean;
   classname?: string;
   validation?: boolean;
@@ -16,32 +16,33 @@ type ButtonPropsType = {
 export const Button: React.FC<ButtonPropsType> = ({
   link,
   cta,
-  loading = false,
   children,
+  loading = false,
   classname,
   validation,
 }) => {
   return (
     <button
       onClick={link}
-      type="submit"
+      type="button"
       className={classnames(
-        "p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+        "p-3 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
         classname
       )}
       disabled={loading || validation}
     >
       {loading ? (
-        <span className="loading-indicator">...</span>
+        <span className="loading-indicator">{children}</span>
       ) : (
         <>
           {cta}
-          {children}
+          {children && !cta ? children : null}
         </>
       )}
     </button>
   );
 };
+
 interface InputProps {
   onChange: (e: any) => void;
   classname?: string;
