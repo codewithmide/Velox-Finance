@@ -12,7 +12,6 @@ import { Rpc, createRpc } from "@lightprotocol/stateless.js";
 import assets from "../static/coins";
 import Loader from "./atom/Loader";
 
-
 const SwapComponent = () => {
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
@@ -237,7 +236,9 @@ const SwapComponent = () => {
     <div className="p-5 bg-[#F8F8F9] shadow flex flex-col gap-4 rounded-lg w-[586px]">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl">Swap</h2>
-        <button onClick={() => setModalOpen(true)}>
+        <button className="center gap-1" onClick={() => setModalOpen(true)}>
+          <p className="text-sm underline">Set slippage</p>
+
           <Image
             src="/icon/setting.png"
             alt="settings"

@@ -16,7 +16,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Velox",
+  title: "Velox Finanace",
   description:
     "High-speed token exchange platform on Solana, utilizing ZK compression to deliver fast, cost-effective transactions.",
 };
