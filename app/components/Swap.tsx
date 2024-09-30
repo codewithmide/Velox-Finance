@@ -5,12 +5,21 @@ import { Input, Button } from "./molecules/FormComponents";
 import DropDownSelect from "./molecules/DropDownSelect";
 import Image from "next/image";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import Modal from "./molecules/Modal";
 import toast from "react-hot-toast";
-import { Rpc, createRpc } from "@lightprotocol/stateless.js";
+import { Rpc, bn, createRpc } from "@lightprotocol/stateless.js";
 import assets from "../static/coins";
 import Loader from "./atom/Loader";
+import {
+  CompressedTokenProgram,
+  selectMinCompressedTokenAccountsForTransfer,
+} from "@lightprotocol/compressed-token";
+import {
+  createAssociatedTokenAccount,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
 
 const SwapComponent = () => {
   const [fromAmount, setFromAmount] = useState("");
@@ -31,7 +40,7 @@ const SwapComponent = () => {
   const [hasEnoughBalance, setHasEnoughBalance] = useState<boolean>(true);
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_MAINNET_API_BASE_URL;
+    const apiKey = process.env.NEXT_PUBLIC_DEVNET_API_BASE_URL;
     if (apiKey) {
       setConnection(createRpc(apiKey));
     }
@@ -44,7 +53,7 @@ const SwapComponent = () => {
     }
 
     try {
-      const rpcUrl = process.env.NEXT_PUBLIC_MAINNET_API_BASE_URL;
+      const rpcUrl = process.env.NEXT_PUBLIC_DEVNET_API_BASE_URL;
       const solanaConnection = new Connection(rpcUrl!);
 
       if (asset.symbol === "SOL") {
@@ -194,28 +203,221 @@ const SwapComponent = () => {
 
     setLoading(true);
     try {
-      const swapInstructions = await fetch(
-        "https://quote-api.jup.ag/v6/swap-instructions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            quoteResponse,
-            userPublicKey: wallet.publicKey.toBase58(),
-          }),
-        }
-      ).then((res) => res.json());
+      const publicKey = wallet.publicKey;
+      const mint = new PublicKey(fromAsset.mint); // The SPL token mint
+      const amount = bn(
+        Math.floor(Number(fromAmount) * Math.pow(10, fromAsset.decimals))
+      );
 
-      if (swapInstructions.error) {
+      // Step 1: Ensure Associated Token Account (ATA) is created
+      let ata;
+      try {
+        ata = await getAssociatedTokenAddress(
+          mint,
+          publicKey // Owner (the connected wallet)
+        );
+        console.log("Associated token account (ATA): ", ata.toBase58());
+      } catch (error: any) {
+        throw new Error(`Error creating/fetching ATA: ${error.message}`);
+      }
+
+      const ataAccountInfo = await connection.getAccountInfo(ata);
+      if (!ataAccountInfo) {
+        console.log("ATA does not exist. Creating it...");
+        try {
+          const createAtaIx = createAssociatedTokenAccountInstruction(
+            publicKey, // Payer
+            ata, // Associated token account
+            publicKey, // Owner
+            mint // Token mint
+          );
+
+          const transaction = new Transaction().add(createAtaIx);
+
+          // Fetch and assign recent blockhash
+          const { blockhash } = await connection.getRecentBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = publicKey;
+
+          const signedTransaction = await wallet.signTransaction(transaction);
+          const txid = await connection.sendRawTransaction(
+            signedTransaction.serialize()
+          );
+          console.log("ATA creation transaction signature: ", txid);
+          await connection.confirmTransaction(txid, "confirmed"); // Wait for confirmation
+        } catch (error: any) {
+          throw new Error(`Error creating ATA: ${error.message}`);
+        }
+      } else {
+        console.log("ATA already exists.");
+      }
+
+      // Step 2: Check SPL token balance in the ATA
+      let tokenBalance;
+      try {
+        tokenBalance = await connection.getTokenAccountBalance(ata);
+        console.log("Token Balance in ATA:", tokenBalance.value.uiAmount);
+      } catch (error: any) {
+        throw new Error(`Error fetching token balance: ${error.message}`);
+      }
+      if (
+        tokenBalance.value.uiAmount === 0 ||
+        Number(tokenBalance.value.uiAmount) < Number(fromAmount)
+      ) {
         throw new Error(
-          "Failed to get swap instructions: " + swapInstructions.error
+          `Not enough balance in the SPL token account. Available: ${tokenBalance.value.uiAmount}, required: ${fromAmount}`
         );
       }
 
-      toast.success("Swap initiated!");
-    } catch (error) {
-      console.error("Error during swap:", error);
-      toast.error("Error during swap: " + (error as Error).message);
+      // Step 3: Compress the SPL tokens
+      let compressIx;
+      try {
+        console.log("Compressing SPL tokens...");
+        compressIx = await CompressedTokenProgram.compress({
+          payer: publicKey, // The wallet is the payer
+          owner: publicKey, // The wallet is the owner
+          source: ata, // The associated token account
+          toAddress: publicKey, // The destination address (wallet itself)
+          amount,
+          mint,
+        });
+        console.log("Compression instruction created: ", compressIx);
+      } catch (error: any) {
+        throw new Error(`Error compressing SPL tokens: ${error.message}`);
+      }
+
+      // Step 4: Fetch compressed token accounts
+      let compressedTokenAccounts;
+      try {
+        console.log("Fetching compressed token accounts...");
+        compressedTokenAccounts =
+          await connection.getCompressedTokenAccountsByOwner(publicKey, {
+            mint,
+          });
+        if (
+          !compressedTokenAccounts ||
+          compressedTokenAccounts.items.length === 0
+        ) {
+          throw new Error("No compressed token accounts found for this mint.");
+        }
+        console.log(
+          "Compressed token accounts fetched: ",
+          compressedTokenAccounts
+        );
+      } catch (error: any) {
+        throw new Error(
+          `Error fetching compressed token accounts: ${error.message}`
+        );
+      }
+
+      // Step 5: Select compressed token accounts for transfer
+      let inputAccounts;
+      try {
+        inputAccounts = selectMinCompressedTokenAccountsForTransfer(
+          compressedTokenAccounts.items,
+          amount
+        );
+        console.log("Selected compressed token accounts: ", inputAccounts);
+      } catch (error: any) {
+        throw new Error(
+          `Error selecting compressed token accounts for transfer: ${error.message}`
+        );
+      }
+
+      // Step 6: Fetch validity proof
+      let proof;
+      try {
+        console.log("Fetching validity proof...");
+        proof = await connection.getValidityProof(
+          inputAccounts.map((account) => bn(account.compressedAccount.hash))
+        );
+        console.log("Validity proof fetched: ", proof);
+      } catch (error: any) {
+        throw new Error(`Error fetching validity proof: ${error.message}`);
+      }
+
+      // Step 7: Get swap instructions (perform token swap)
+      let swapInstructions;
+      try {
+        console.log("Fetching swap instructions...");
+        swapInstructions = await fetch(
+          "https://quote-api.jup.ag/v6/swap-instructions",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              quoteResponse, // Ensure this is properly set
+              userPublicKey: wallet.publicKey.toBase58(),
+            }),
+          }
+        ).then((res) => res.json());
+
+        if (swapInstructions.error) {
+          throw new Error(
+            "Failed to get swap instructions: " + swapInstructions.error
+          );
+        }
+        console.log("Swap instructions fetched: ", swapInstructions);
+      } catch (error: any) {
+        throw new Error(`Error fetching swap instructions: ${error.message}`);
+      }
+
+      // Step 8: Decompress the swapped tokens back to SPL format
+      let decompressIx;
+      try {
+        console.log("Decompressing swapped tokens...");
+        decompressIx = await CompressedTokenProgram.decompress({
+          payer: publicKey, // The wallet is the payer
+          inputCompressedTokenAccounts: inputAccounts,
+          toAddress: ata, // The associated token account
+          amount,
+          recentInputStateRootIndices: proof.rootIndices,
+          recentValidityProof: proof.compressedProof,
+        });
+        console.log("Decompression instruction created: ", decompressIx);
+      } catch (error: any) {
+        throw new Error(`Error decompressing swapped tokens: ${error.message}`);
+      }
+
+      // Step 9: Add all instructions (compression, swap, decompression) to the transaction
+      const transaction = new Transaction()
+        .add(compressIx) // Compress the SPL tokens
+        .add(...swapInstructions.instructions) // Perform the swap
+        .add(decompressIx); // Decompress the swapped tokens
+
+      // Fetch and assign recent blockhash
+      const { blockhash } = await connection.getRecentBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // Step 10: Sign the transaction with the user's wallet
+      let signedTransaction;
+      try {
+        console.log("Signing transaction...");
+        signedTransaction = await wallet.signTransaction(transaction);
+      } catch (error: any) {
+        throw new Error(`Error signing transaction: ${error.message}`);
+      }
+
+      // Step 11: Send the transaction
+      let signature;
+      try {
+        console.log("Sending transaction...");
+        signature = await connection.sendRawTransaction(
+          signedTransaction.serialize()
+        );
+        console.log("Transaction signature: ", signature);
+      } catch (error: any) {
+        throw new Error(`Error sending transaction: ${error.message}`);
+      }
+
+      toast.success(
+        "Swap, compression, and decompression completed successfully!"
+      );
+      console.log("Transaction completed with signature: ", signature);
+    } catch (error: any) {
+      console.error("Error during swap: ", error);
+      toast.error("Error during swap: " + error.message);
     } finally {
       setLoading(false);
     }
