@@ -16,37 +16,116 @@ import {
   selectMinCompressedTokenAccountsForTransfer,
 } from "@lightprotocol/compressed-token";
 import {
-  createAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { generateGravatar } from "../utils/svgImage";
+
+interface CompressedAsset {
+  mint: string;
+  tokenPoolPda: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  image: string;
+}
+
+const COMPRESSED_TOKEN_PROGRAM_PDA =
+  process.env.NEXT_PUBLIC_COMPRESSED_TOKEN_PROGRAM_PDA || "";
 
 const SwapComponent = () => {
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
-  const [fromAsset, setFromAsset] = useState(assets[0]);
-  const [toAsset, setToAsset] = useState(assets[1]);
+  const [fromAsset, setFromAsset] = useState<CompressedAsset | null>(null);
+  const [toAsset, setToAsset] = useState<CompressedAsset | null>(null);
   const [slippage, setSlippage] = useState("1");
   const [customSlippage, setCustomSlippage] = useState("");
   const [isModalOpen, setModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [quoteResponse, setQuoteResponse] = useState<any>(null);
   const [priceImpact, setPriceImpact] = useState<string | null>(null);
   const [activeInput, setActiveInput] = useState<"from" | "to">("from");
-
-  const wallet = useWallet();
-  const [connection, setConnection] = useState<Rpc | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [hasEnoughBalance, setHasEnoughBalance] = useState<boolean>(true);
+  const [compressedAssets, setCompressedAssets] = useState<CompressedAsset[]>(
+    []
+  );
+  const [loading, setLoading] = useState(false);
+  const wallet = useWallet();
+  const [connection, setConnection] = useState<Rpc | null>(null);
 
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_DEVNET_API_BASE_URL;
     if (apiKey) {
-      setConnection(createRpc(apiKey));
+      const rpcConnection = createRpc(apiKey);
+      setConnection(rpcConnection);
+
+      fetchCompressedTokens(rpcConnection).then((tokens) => {
+        setCompressedAssets(tokens);
+        if (tokens.length > 0) {
+          setFromAsset(tokens[0]);
+        }
+      });
     }
   }, []);
 
-  const fetchBalance = async (asset: (typeof assets)[0]) => {
+  // Function to change the selected "from" asset
+  const handleFromAssetChange = (assetMint: string) => {
+    const selectedAsset = compressedAssets.find(
+      (asset) => asset.mint === assetMint
+    );
+    setFromAsset(selectedAsset || null);
+  };
+
+  // Function to change the selected "to" asset
+  const handleToAssetChange = (assetMint: string) => {
+    const selectedAsset = compressedAssets.find(
+      (asset) => asset.mint === assetMint
+    );
+    setToAsset(selectedAsset || null);
+  };
+
+  // Function to format mint address for better UX
+  const formatMintAddress = (address: string) => {
+    return `${address.slice(0, 3)}...${address.slice(-2)}`;
+  };
+
+  // Fetch compressed tokens owned by the program's PDA
+  const fetchCompressedTokens = async (
+    connection: Rpc
+  ): Promise<CompressedAsset[]> => {
+    try {
+      const accounts = await connection.getParsedTokenAccountsByOwner(
+        new PublicKey(COMPRESSED_TOKEN_PROGRAM_PDA),
+        { programId: TOKEN_PROGRAM_ID }
+      );
+
+      const compressedTokens: CompressedAsset[] = accounts.value.map(
+        ({ account }) => {
+          const mint = account.data.parsed.info.mint;
+          const tokenPoolPda = account.data.parsed.info.owner;
+          return {
+            mint,
+            tokenPoolPda,
+            symbol: "CT", // Default values for compressed tokens
+            name: "Compressed Token",
+            decimals: 9,
+            image: "/compressed-token.png", // Placeholder image for compressed tokens
+          };
+        }
+      );
+
+      console.log("Fetched compressed tokens: ", compressedTokens);
+      return compressedTokens;
+    } catch (error) {
+      console.error("Error fetching compressed tokens: ", error);
+      toast.error("Error fetching compressed tokens.");
+      return [];
+    }
+  };
+
+  // Fetch balance for a given asset (either SOL or SPL token)
+  const fetchBalance = async (asset: CompressedAsset) => {
     if (!wallet.connected || !wallet.publicKey) {
       setBalance(null);
       return;
@@ -88,12 +167,14 @@ const SwapComponent = () => {
     }
   };
 
+  // Fetch balance whenever a new asset is selected
   useEffect(() => {
     if (wallet.connected && fromAsset) {
       fetchBalance(fromAsset);
     }
   }, [fromAsset, wallet.connected]);
 
+  // Handle input changes for "from" and "to" fields
   const handleAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     isFrom: boolean
@@ -120,40 +201,29 @@ const SwapComponent = () => {
     }
   };
 
-  const handleFromAssetChange = (assetSymbol: string) => {
-    const selectedAsset =
-      assets.find((asset) => asset.symbol === assetSymbol) || assets[0];
-    setFromAsset(selectedAsset);
-    fetchBalance(selectedAsset);
-    debounceQuoteCall(Number(fromAmount), selectedAsset, toAsset, true);
-  };
-
-  const handleToAssetChange = (assetSymbol: string) => {
-    const selectedAsset =
-      assets.find((asset) => asset.symbol === assetSymbol) || assets[1];
-    setToAsset(selectedAsset);
-    debounceQuoteCall(Number(toAmount), fromAsset, selectedAsset, false);
-  };
-
+  // Debounce function to reduce excessive API calls
   const debounceQuoteCall = useCallback(
     debounce(
       (
         amount: number,
-        from: (typeof assets)[0],
-        to: (typeof assets)[0],
+        from: CompressedAsset | null,
+        to: CompressedAsset | null,
         isFrom: boolean
       ) => {
-        getQuote(amount, from, to, isFrom);
+        if (from && to) {
+          getQuote(amount, from, to, isFrom);
+        }
       },
       500
     ),
     [fromAsset, toAsset, activeInput, slippage, connection]
   );
 
+  // Get a quote for the token swap
   const getQuote = async (
     amount: number,
-    from: (typeof assets)[0],
-    to: (typeof assets)[0],
+    from: CompressedAsset,
+    to: CompressedAsset,
     isFrom: boolean
   ) => {
     if (isNaN(amount) || amount <= 0 || !connection) return;
@@ -163,7 +233,9 @@ const SwapComponent = () => {
       const amountInSmallestUnit = Math.floor(
         amount * Math.pow(10, from.decimals)
       );
-      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${from.mint}&outputMint=${to.mint}&amount=${amountInSmallestUnit}&slippageBps=${Number(slippage) * 100}${isFrom ? "" : "&swapMode=ExactOut"}`;
+      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${from.mint}&outputMint=${to.mint}&amount=${amountInSmallestUnit}&slippageBps=${
+        Number(slippage) * 100
+      }${isFrom ? "" : "&swapMode=ExactOut"}`;
       const quote = await fetch(quoteUrl).then((res) => res.json());
 
       if (quote && (isFrom ? quote.outAmount : quote.inAmount)) {
@@ -204,9 +276,11 @@ const SwapComponent = () => {
     setLoading(true);
     try {
       const publicKey = wallet.publicKey;
-      const mint = new PublicKey(fromAsset.mint); // The SPL token mint
+      const mint = new PublicKey(String(fromAsset?.mint)); // The SPL token mint
       const amount = bn(
-        Math.floor(Number(fromAmount) * Math.pow(10, fromAsset.decimals))
+        Math.floor(
+          Number(fromAmount) * Math.pow(10, Number(fromAsset?.decimals))
+        )
       );
 
       // Step 1: Ensure Associated Token Account (ATA) is created
@@ -453,12 +527,13 @@ const SwapComponent = () => {
       <div className="between w-full px-1">
         <p className="text-sm text-gray-600">
           {balance !== null
-            ? `Balance: ${balance.toFixed(fromAsset.decimals)} ${fromAsset.symbol}`
+            ? `Balance: ${balance.toFixed(fromAsset ? fromAsset.decimals : 0)}`
             : "Balance not available"}
         </p>
         {!hasEnoughBalance && (
           <p className="text-sm text-red-600">
-            Insufficient {fromAsset.symbol} balance
+            Insufficient {fromAsset ? formatMintAddress(fromAsset.mint) : ""}{" "}
+            balance
           </p>
         )}
       </div>
@@ -476,12 +551,13 @@ const SwapComponent = () => {
           <div className="my-auto min-w-[100px] center">
             <DropDownSelect
               cta="Select Currency"
-              options={assets.map((asset) => ({
-                name: asset.symbol,
-                action: () => handleFromAssetChange(asset.symbol),
-                image: asset.image,
+              options={compressedAssets.map((asset) => ({
+                name: asset.mint, // Full address here
+                action: () => handleFromAssetChange(asset.mint),
+                image: generateGravatar(asset.mint),
               }))}
-              active={fromAsset.symbol}
+              active={fromAsset ? formatMintAddress(fromAsset.mint) : ""}
+              formatMintAddress={formatMintAddress}
             />
           </div>
         </div>
@@ -510,12 +586,13 @@ const SwapComponent = () => {
           <div className="my-auto min-w-[100px] center">
             <DropDownSelect
               cta="Select Currency"
-              options={assets.map((asset) => ({
-                name: asset.symbol,
-                action: () => handleToAssetChange(asset.symbol),
-                image: asset.image,
+              options={compressedAssets.map((asset) => ({
+                name: asset.mint,
+                action: () => handleToAssetChange(asset.mint),
+                image: generateGravatar(asset.mint),
               }))}
-              active={toAsset.symbol}
+              active={toAsset ? formatMintAddress(toAsset.mint) : ""}
+              formatMintAddress={formatMintAddress}
             />
           </div>
         </div>
