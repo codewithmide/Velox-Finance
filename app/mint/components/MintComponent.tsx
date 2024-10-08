@@ -114,10 +114,10 @@ const MintComponent = () => {
       </button>
 
       {mintAddress && (
-        <div className="mt-4 p-3 bg-green-100 rounded-lg">
-          <p>Mint Address: {mintAddress}</p>
-          <p>Mint Transaction Signature: {transactionSignature}</p>
-          {transferTxId && <p>Transfer Transaction ID: {transferTxId}</p>}
+        <div className="mt-4 p-3 bg-green-100 rounded-lg w-full flex flex-col gap-4">
+          <p className="text-sm w-full">Mint Address: {mintAddress}</p>
+          <p className="text-sm w-full break-words">Mint Transaction Signature: {transactionSignature}</p>
+          {transferTxId && <p className="text-sm w-full break-words">Transfer Transaction ID: {transferTxId}</p>}
         </div>
       )}
     </div>

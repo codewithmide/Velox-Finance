@@ -9,7 +9,6 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import Modal from "./molecules/Modal";
 import toast from "react-hot-toast";
 import { Rpc, bn, createRpc } from "@lightprotocol/stateless.js";
-import assets from "../static/coins";
 import Loader from "./atom/Loader";
 import {
   CompressedTokenProgram,
@@ -550,7 +549,7 @@ const SwapComponent = () => {
           />
           <div className="my-auto min-w-[100px] center">
             <DropDownSelect
-              cta="Select Currency"
+              cta="Select Mint"
               options={compressedAssets.map((asset) => ({
                 name: asset.mint, // Full address here
                 action: () => handleFromAssetChange(asset.mint),
@@ -585,7 +584,7 @@ const SwapComponent = () => {
           />
           <div className="my-auto min-w-[100px] center">
             <DropDownSelect
-              cta="Select Currency"
+              cta="Select Mint"
               options={compressedAssets.map((asset) => ({
                 name: asset.mint,
                 action: () => handleToAssetChange(asset.mint),
