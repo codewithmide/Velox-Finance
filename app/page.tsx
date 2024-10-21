@@ -4,9 +4,9 @@ import TabSection from "./components/tabs/page";
 
 export default function Home() {
   return (
-    <div className="center flex-col min-h-screen p-3 md:p-6 md:pb-[18rem] pb-[8rem] gap-16">
+    <div className="center flex-col min-h-screen p-3 md:p-6 md:pb-[16rem] pb-[8rem] gap-16">
       <Navbar />
-      <div className="flex-col center xl:w-[48%] md:w-[90%] gap-6">
+      <div className="flex-col center xl:w-[60%] md:w-[90%] gap-6">
         <h1 className="lg:text-[72px] md:text-[60px] text-[30px] text-center leading-none font-bold gradient-text">
           Navigate Solana&apos;s Compressed Assets
         </h1>

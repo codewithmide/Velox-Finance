@@ -517,8 +517,9 @@ const SwapComponent = () => {
             <Image
               src="/icon/settings.png"
               alt="settings"
-              width={20}
-              height={20}
+              width={18}
+              height={18}
+              className="my-auto"
             />
           </button>
         </div>
