@@ -3,7 +3,6 @@
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Link from "next/link";
 import "@solana/wallet-adapter-react-ui/styles.css";
-import "./../styles/wallet.css"
 
 const Navbar = () => {
   return (
@@ -11,7 +10,7 @@ const Navbar = () => {
       <div className="gap-10 flex items-end">
         <Link href="/" target="_blank" className="md:text-[18px] font-bold">Velox Finance</Link>
       </div>
-      <WalletMultiButton className="custom-wallet-button" />
+      <WalletMultiButton />
     </nav>
   );
 };

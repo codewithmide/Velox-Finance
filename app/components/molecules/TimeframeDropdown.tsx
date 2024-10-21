@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./FormComponents";
 import { IoCheckmark } from "react-icons/io5";
 
@@ -24,6 +24,7 @@ const TimeframeSelect = ({
 }: TimeframeSelectProps) => {
   const [show, setShow] = useState(false);
   const [selectedOption, setSelectedOption] = useState<TimeframeOption | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const activeOption = options.find((option) => option.name === active);
@@ -44,8 +45,22 @@ const TimeframeSelect = ({
     toggleDropDown();
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShow(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
   return (
-    <div className="relative rounded-lg">
+    <div className="relative rounded-lg" ref={dropdownRef}>
       <Button
         link={toggleDropDown}
         classname={

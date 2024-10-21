@@ -11,6 +11,7 @@ body {
   overflow-x: hidden;
   color: white;
   font-family: "Rubik", sans-serif;
+  width: 100vw;
 }
 
 .word-break-all {
