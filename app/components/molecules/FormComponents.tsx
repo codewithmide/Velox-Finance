@@ -26,7 +26,7 @@ export const Button: React.FC<ButtonPropsType> = ({
       onClick={link}
       type="button"
       className={classnames(
-        "p-3 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
+        "p-3  flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed",
         classname
       )}
       disabled={loading || validation}
@@ -126,15 +126,15 @@ export const Input = ({
   return (
     <div className={classnames("flex flex-col gap-2 w-full", classname)}>
       {label && (
-        <small className="text-sm text-dark">{label}</small>
+        <small className="md:text-[16px] text-[#9CA3AF]">{label}</small>
       )}
 
-      <div className="flex items-center input-wrapper outline-none text-xl rounded-lg focus:outline-none ">
+      <div className="flex items-center input-wrapper outline-none text-4xl rounded-lg focus:outline-none ">
         {preIcon && <Image className="h-4 w-4 ml-3" src={preIcon} alt="" />}
         <input
           type={type}
           id={label}
-          className="focus:outline-none focus:bg-none py-2 placeholder-text-secondary bg-transparent w-full rounded-lg text-dark"
+          className="focus:outline-none focus:bg-none py-2 bg-transparent w-full rounded-lg text-white text-xl md:text-4xl"
           placeholder={placeholder}
           value={value}
           onChange={onChange}

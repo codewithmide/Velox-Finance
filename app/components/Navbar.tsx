@@ -2,23 +2,16 @@
 
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Link from "next/link";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import "./../styles/wallet.css"
 
 const Navbar = () => {
   return (
-    <nav className="p-6 between w-full">
+    <nav className="md:p-6 pt-6 between w-full">
       <div className="gap-10 flex items-end">
-        <Link href="/" target="_blank" className="text-2xl font-medium">Velox Finance</Link>
-        <Link href="/swap" target="_blank" className="underline text-lg">
-          Swap
-        </Link>
-        <Link href="/mint" target="_blank" className="underline text-lg">
-          Mint
-        </Link>
-        <Link href="/liquidity" target="_blank" className="underline text-lg">
-          Liquidity Pool
-        </Link>
+        <Link href="/" target="_blank" className="md:text-[18px] font-bold">Velox Finance</Link>
       </div>
-      <WalletMultiButton />
+      <WalletMultiButton className="custom-wallet-button" />
     </nav>
   );
 };

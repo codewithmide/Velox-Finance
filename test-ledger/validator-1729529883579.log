@@ -1,0 +1,40 @@
+[2024-10-21T16:58:03.579621000Z INFO  solana_test_validator] agave-validator 1.18.22 (src:9efdd74b; feat:4215500110, client:Agave)
+[2024-10-21T16:58:03.579716000Z INFO  solana_test_validator] Starting validator with: ArgsOs {
+        inner: [
+            "solana-test-validator",
+            "--reset",
+            "--limit-ledger-size=10000",
+            "--rpc-port=8899",
+            "--gossip-host=127.0.0.1",
+            "--quiet",
+            "--bpf-program",
+            "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/bin/spl_noop.so",
+            "--bpf-program",
+            "SySTEM1eSU2p4BGQfQpimFEWWSC1XDFeun3Nqzz3rT7",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/bin/light_system_program.so",
+            "--bpf-program",
+            "cTokenmWW8bLPjZEBAUgYy3zKxQZW6VKi7bqNFEVv3m",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/bin/light_compressed_token.so",
+            "--bpf-program",
+            "compr6CUsB5m2jS4Y3831ztGSTnDpnKJTKS95d64XVq",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/bin/account_compression.so",
+            "--bpf-program",
+            "Lighton6oQpVkeewmo2mcPTQQp7kYHr4fWpAgJyEmDX",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/bin/light_registry.so",
+            "--account-dir",
+            "/Users/apple/.nvm/versions/node/v20.17.0/lib/node_modules/@lightprotocol/zk-compression-cli/accounts",
+        ],
+    }
+[2024-10-21T16:58:03.579838000Z WARN  solana_perf] CUDA is disabled
+[2024-10-21T16:58:03.586465000Z INFO  solana_faucet::faucet] Faucet started. Listening on: 0.0.0.0:9900
+[2024-10-21T16:58:03.586479000Z INFO  solana_faucet::faucet] Faucet account address: HxqHxnpcvN7vU2R337bBHV1kkFruHq8B22z5WTeg4v1K
+[2024-10-21T16:58:03.587076000Z INFO  agave_validator::admin_rpc_service] started admin rpc service!
+[2024-10-21T16:58:03.611872000Z INFO  solana_test_validator] Feature for 41tVp5qR1XwWRt5WifvtSQyuxtqQWJgEK8w91AtBqSwP deactivated
+[2024-10-21T16:58:03.617620000Z INFO  solana_ledger::blockstore] Maximum open file descriptors: 1048575
+[2024-10-21T16:58:03.617700000Z INFO  solana_ledger::blockstore] Opening blockstore at "test-ledger/rocksdb"
+[2024-10-21T16:58:03.618135000Z WARN  solana_ledger::blockstore_db] Unable to detect Rocks columns: Error { message: "IO error: No such file or directory: While opening a file for sequentially reading: test-ledger/rocksdb/CURRENT: No such file or directory" }
+[2024-10-21T16:58:03.765862000Z INFO  solana_ledger::blockstore] Opening blockstore done; blockstore open took 148ms
+[2024-10-21T16:58:03.817307000Z INFO  solana_metrics::metrics] metrics disabled: environment variable not found
+[2024-10-21T16:58:03.817400000Z INFO  solana_metrics::metrics] datapoint: shred_insert_is_full total_time_ms=1i slot=0i last_index=31i num_repaired=0i num_recovered=0i
+[2024-10-21T16:58:04.302994000Z INFO  solana_accounts_db::hardened_unpack] Extracting "test-ledger/genesis.tar.bz2"...

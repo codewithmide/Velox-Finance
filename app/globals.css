@@ -1,12 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body {
+html,
+body {
   padding: 0;
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
+  color: white;
+  font-family: "Rubik", sans-serif;
+}
+
+.word-break-all {
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .center {
@@ -15,12 +24,23 @@ html, body {
   justify-content: center;
 }
 
+.active-tab {
+  box-shadow: 0px 1px 2px 0px #00000014;
+  box-shadow: 0px 1px 2px 0px #FFFFFF40 inset;
+}
+
+.gradient-text {
+  background: linear-gradient(180deg, #FFFFFF 9.25%, #999999 143.5%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .between {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-
 
 .spinner {
   font-size: 28px;

@@ -1,0 +1,13 @@
+.wallet-adapter-button {
+    background-color: #9100A9 !important;
+    border-radius: 38px !important;
+    padding: 0px 30px !important;
+}
+
+.wallet-adapter-button:hover {
+    background-color: #9000a9c6 !important;
+}
+
+.wallet-adapter-dropdown-list-item {
+    padding: 0px 30px !important;
+}
